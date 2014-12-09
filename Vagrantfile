@@ -1,7 +1,7 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-active = [:ruby]
+active = [:node, :mongo]
 
 servers = {
   ruby:   {type: :ruby,        provision: %w{rvm} },
