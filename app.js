@@ -1,6 +1,7 @@
 var express    = require('express'),
     bodyParser = require('body-parser'),
-    mongoose   = require('mongoose');
+    mongoose   = require('mongoose'),
+    session    = require('client-sessions');
 
 mongoose.connect('mongodb://192.168.33.30/svcc');
 
@@ -8,6 +9,12 @@ var app = express();
 
 app.set('view engine', 'jade');
 
+app.use(session({
+  cookieName:     'session',
+  secret:         'really_long_random_string',  // signing/ecrypting cookies
+  duration:       30 * 60 * 1000,  // delete after 30 min (in ms)
+  activeDuration: 5 * 60 * 1000    // extend the session 5 min if active
+}));
 app.use(bodyParser.urlencoded({ 'extended' : true }));
 
 app.get('/', function(req,res) {
@@ -45,6 +52,7 @@ app.post('/login', function(req,res) {
       res.render('login.jade', {error: 'Incorrect email/password'});
     } else if (user) {
       if (req.body.password === user.password) {
+        req.session.user = user;  // bad idea
         res.redirect('/dashboard');
       } else {
         res.render('login.jade', {error: 'Incorrect email/password'});
@@ -59,7 +67,19 @@ app.get('/login', function(req,res) {
   res.render('login.jade');
 });
 app.get('/dashboard', function(req,res) {
-  res.render('dashboard.jade');
+  if (req.session && req.session.user) {
+    User.findOne({email: req.session.user.email}, function(err,user) {
+      if (!user) {
+        req.session.reset();
+        res.redirect('/login');
+      } else {
+        res.locals.user = user;
+        res.render('dashboard.jade');
+      }
+    });
+  } else {
+    res.redirect('/login');
+  }
 });
 
 var Schema = mongoose.Schema;
