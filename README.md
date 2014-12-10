@@ -31,4 +31,10 @@ Sessions
       "Set-Cookie" : "session=rkiel@pobox.com;"
     }
 
+Storing Passwords in Database
+
+All hashing is one-way
+
+use bcrypt
+
 

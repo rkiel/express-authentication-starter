@@ -1,7 +1,8 @@
 var express    = require('express'),
     bodyParser = require('body-parser'),
     mongoose   = require('mongoose'),
-    session    = require('client-sessions');
+    session    = require('client-sessions'),
+    bcrypt     = require('bcryptjs');
 
 mongoose.connect('mongodb://192.168.33.30/svcc');
 
@@ -22,11 +23,14 @@ app.get('/', function(req,res) {
 });
 
 app.post('/register', function(req,res) {
+  var salt = bcrypt.genSaltSync(10); // prevent rainbow attacks
+  var hash = bcrypt.hashSync(req.body.password,salt);
+
   var user = new User({
     firstName: req.body.firstName,
     lastName:  req.body.lastName,
     email:     req.body.email,
-    password:  req.body.password
+    password:  hash
   });
   user.save(function(err) {
     if (err) {
@@ -51,7 +55,7 @@ app.post('/login', function(req,res) {
     if (err) {
       res.render('login.jade', {error: 'Incorrect email/password'});
     } else if (user) {
-      if (req.body.password === user.password) {
+      if (bcrypt.compareSync(req.body.password,user.password)) {
         req.session.user = user;  // bad idea
         res.redirect('/dashboard');
       } else {
