@@ -18,6 +18,39 @@ app.use(session({
 }));
 app.use(bodyParser.urlencoded({ 'extended' : true }));
 
+app.use(function(req,res,next) {
+  if (req.session && req.session.user) {
+    User.findOne({email: req.session.user.email}, function(err,user) {
+      if (user) {
+        createSession(req,res,user);
+      }
+      next();
+    });
+  } else {
+    next(); // if no session is available, do nothing
+  }
+});
+
+function requireLogin (req, res, next) {
+  // if not logged in
+  if (!req.user) {
+    res.redirect('/login');
+  } else {
+    next();
+  }
+}
+
+function createSession (req, res, user) {
+  var cleanUser = {
+    firstName: user.firstName,
+    lastName:  user.lastName,
+    email:     user.email
+  }
+  req.session.user = cleanUser;
+  req.user = cleanUser;
+  res.locals.user = cleanUser;
+}
+
 app.get('/', function(req,res) {
   res.render('index.jade');
 });
@@ -56,7 +89,7 @@ app.post('/login', function(req,res) {
       res.render('login.jade', {error: 'Incorrect email/password'});
     } else if (user) {
       if (bcrypt.compareSync(req.body.password,user.password)) {
-        req.session.user = user;  // bad idea
+        createSession(req,res,user);
         res.redirect('/dashboard');
       } else {
         res.render('login.jade', {error: 'Incorrect email/password'});
@@ -70,20 +103,17 @@ app.post('/login', function(req,res) {
 app.get('/login', function(req,res) {
   res.render('login.jade');
 });
-app.get('/dashboard', function(req,res) {
-  if (req.session && req.session.user) {
-    User.findOne({email: req.session.user.email}, function(err,user) {
-      if (!user) {
-        req.session.reset();
-        res.redirect('/login');
-      } else {
-        res.locals.user = user;
-        res.render('dashboard.jade');
-      }
-    });
-  } else {
-    res.redirect('/login');
+
+app.get('/logout', function(req,res) {
+  if (req.session) {
+    req.session.reset();
   }
+  res.redirect('/');
+});
+
+// require login
+app.get('/dashboard', requireLogin, function(req,res) {
+  res.render('dashboard.jade');
 });
 
 var Schema = mongoose.Schema;
