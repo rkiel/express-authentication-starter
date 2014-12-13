@@ -2,7 +2,8 @@ var express    = require('express'),
     bodyParser = require('body-parser'),
     mongoose   = require('mongoose'),
     session    = require('client-sessions'),
-    bcrypt     = require('bcryptjs');
+    bcrypt     = require('bcryptjs'),
+    csrf       = require('csurf');
 
 mongoose.connect('mongodb://192.168.33.30/svcc');
 
@@ -10,13 +11,18 @@ var app = express();
 
 app.set('view engine', 'jade');
 
+app.use(bodyParser.urlencoded({ 'extended' : true }));
+
+app.use(bodyParser.urlencoded({ 'extended' : true }));
+
 app.use(session({
   cookieName:     'session',
   secret:         'really_long_random_string',  // signing/ecrypting cookies
   duration:       30 * 60 * 1000,  // delete after 30 min (in ms)
   activeDuration: 5 * 60 * 1000    // extend the session 5 min if active
 }));
-app.use(bodyParser.urlencoded({ 'extended' : true }));
+
+app.use(csrf());
 
 app.use(function(req,res,next) {
   if (req.session && req.session.user) {
@@ -80,7 +86,7 @@ app.post('/register', function(req,res) {
 });
 
 app.get('/register', function(req,res) {
-  res.render('register.jade');
+  res.render('register.jade', {csrfToken: req.csrfToken()});
 });
 
 app.post('/login', function(req,res) {
@@ -101,7 +107,7 @@ app.post('/login', function(req,res) {
 });
 
 app.get('/login', function(req,res) {
-  res.render('login.jade');
+  res.render('login.jade', {csrfToken: req.csrfToken()});
 });
 
 app.get('/logout', function(req,res) {
