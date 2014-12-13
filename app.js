@@ -19,7 +19,10 @@ app.use(session({
   cookieName:     'session',
   secret:         'really_long_random_string',  // signing/ecrypting cookies
   duration:       30 * 60 * 1000,  // delete after 30 min (in ms)
-  activeDuration: 5 * 60 * 1000    // extend the session 5 min if active
+  activeDuration: 5 * 60 * 1000,    // extend the session 5 min if active
+  httpOnly: true, // don't let JS code access cookies
+//  secure: true, // only set cookies over https
+  ephemeral: true // destroy cookies when browser closes
 }));
 
 app.use(csrf());
